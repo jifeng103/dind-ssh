@@ -1,28 +1,42 @@
-# Use Debian-based docker:dind
-FROM docker:dind-rootless
-# Switch to root for installation
-USER root
-# Install OpenSSH server and required packages
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+# 使用 Debian 最新版本作为基础镜像
+FROM debian:latest
+
+# 设置环境变量
+ENV DEBIAN_FRONTEND=noninteractive \
+    ROOT_PASSWORD=""
+
+# 安装必要的包
+RUN apt-get update && apt-get install -y \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release \
     openssh-server \
-    && rm -rf /var/lib/apt/lists/* \
-    && mkdir -p /var/run/sshd
-# Configure SSH
-RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
-# 创建设置密码的脚本
-RUN echo '#!/bin/sh\n\
+    iptables \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
+# 配置 SSH
+RUN mkdir -p /var/run/sshd \
+    && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+
+# 创建启动脚本
+RUN echo '#!/bin/bash\n\
+# 设置 root 密码\n\
 if [ ! -z "$ROOT_PASSWORD" ]; then\n\
     echo "root:$ROOT_PASSWORD" | chpasswd\n\
 fi\n\
-/usr/sbin/sshd -D &' > /usr/local/bin/start-ssh.sh && \
-    chmod +x /usr/local/bin/start-ssh.sh
-# 在 /etc/rc.local 中添加启动 SSH 的命令
-RUN echo '#!/bin/sh\n/usr/local/bin/start-ssh.sh' > /etc/rc.local && \
-    chmod +x /etc/rc.local
-# Expose SSH port
+\n\
+# 启动 SSH 服务\n\
+/usr/sbin/sshd\n\
+\n\
+# 保持容器运行\n\
+tail -f /dev/null' > /usr/local/bin/entrypoint.sh \
+    && chmod +x /usr/local/bin/entrypoint.sh
+
+# 暴露 SSH 端口
 EXPOSE 22
-# 声明环境变量
-ENV ROOT_PASSWORD=""
-# 保持原始的 entrypoint
-ENTRYPOINT ["dockerd"]
+
+# 设置入口点
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
