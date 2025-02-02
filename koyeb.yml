@@ -1,0 +1,7 @@
+name: dind-ssh
+service:
+  type: docker
+  dockerfile: Dockerfile
+  ports:
+    - port: 22
+      protocol: tcp
