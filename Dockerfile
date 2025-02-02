@@ -1,5 +1,5 @@
 # Use Debian-based docker:dind
-FROM docker:dind
+FROM debian:latest
 
 # Switch to root for installation
 USER root
@@ -31,6 +31,3 @@ EXPOSE 22
 
 # 声明环境变量
 ENV ROOT_PASSWORD=""
-
-# 保持原始的 entrypoint
-ENTRYPOINT ["dockerd"]
