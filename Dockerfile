@@ -1,5 +1,5 @@
 # Use Debian-based docker:dind
-FROM docker:dind
+FROM docker:dind-rootless
 # Switch to root for installation
 USER root
 # Install OpenSSH server and required packages
